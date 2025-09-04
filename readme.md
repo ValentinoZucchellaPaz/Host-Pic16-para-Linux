@@ -17,7 +17,10 @@ Este repositorio contiene un host Python para cargar programas `.hex` en microco
 ## 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu_usuario/an1310_host.git
+# con SSH
+git clone git@github.com:ValentinoZucchellaPaz/Host-Pic16-para-Linux.git
+# con HTTPS
+git clone https://github.com/ValentinoZucchellaPaz/Host-Pic16-para-Linux.git
 cd an1310_host
 ```
 
