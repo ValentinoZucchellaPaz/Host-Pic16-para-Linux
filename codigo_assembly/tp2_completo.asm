@@ -1,5 +1,5 @@
-        list p=16F887
-        #include <p16f887.inc>
+list p=16F887
+#include <p16f887.inc>
 
 
 ;---------------------------------
@@ -9,16 +9,16 @@
             index
             R1
             R2
-            R3
-            prev	    ; guardo valor previo de boton
-            kitt_sel	    ; 0 contador, 1 secuencia kitt
-            counter	    ; var donde guardo contador
+	    R3
+	    prev	    ; guardo valor previo de boton
+	    kitt_sel	    ; 0 contador, 1 secuencia kitt
+	    counter	    ; var donde guardo contador
         endc
 
 ;---------------------------------
 ; RESET VECTOR
 ;---------------------------------
-    org 0x00
+        org 0x00
         goto main
 	org 0x05
 
@@ -27,19 +27,19 @@
 ; PROGRAMA PRINCIPAL
 ;---------------------------------
 main
-    banksel TRISB
-    clrf TRISB	    ; Puerto B como salida
+        banksel TRISB
+        clrf TRISB	    ; Puerto B como salida
 	banksel TRISA
 	movlw 0xFF	    ; Puerto A como entrada
 	movwf TRISA
-    banksel ANSEL	    ; Puerto A digital
-    clrf ANSEL
-    banksel ANSELH	    ; Puerto B digital
-    clrf ANSELH
-    banksel PORTB	    ; Leds comienzan apagados
-    clrf PORTB
+        banksel ANSEL	    ; Puerto A digital
+        clrf ANSEL
+        banksel ANSELH	    ; Puerto B digital
+        clrf ANSELH
+        banksel PORTB	    ; Leds comienzan apagados
+        clrf PORTB
 
-    clrf index
+        clrf index
 	clrf prev
 	clrf kitt_sel	    ; comienza contador
 	clrf counter
@@ -47,12 +47,12 @@ main
 LOOP
 	; Chequea cambio de flanco de boton, luego depende de kitt_sel si hace cuenta o si hace secuencia kitt
 	CALL	CAMBIO_FLANCO
-	BTFSC	kitt_sel, 0
+	BTFSC	kitt_sel, 0     ; esto de aca se puede mejorar
 	call	KITT
 	call	INCREMENT_COUNTER
 	GOTO	LOOP
 	
-CAMBIO_FLANCO
+CAMBIO_FLANCO			; PROBLEMA A SOLUCIONAR: puede ser que levante el dedo justo antes de entrar aca, entonces no detecta el flanco
 	; tengo un boton que si presiono 1 vez cambio entre contador y kitt
 	MOVF	PORTA, w        ; Pongo portA en W, luego paso a var PREV
 	MOVWF	prev
@@ -69,6 +69,7 @@ INCREMENT_COUNTER
 	incf	counter, f
 	movf	counter, w
 	movwf	PORTB
+	call RET_200MS
 	goto LOOP
 	
 TOGGLE_KITT
@@ -89,7 +90,7 @@ KITT
         call RET_200MS
 
         incf index, f
-        movlw d'19'       ; cantidad de patrones
+        movlw d'18'       ; cantidad de patrones
         subwf index, w
         btfss STATUS, Z
         GOTO LOOP
@@ -128,23 +129,22 @@ PATRONES_KITT
 	addwf PCL, f
 	retlw b'10000000'
 	retlw b'11000000'
-    retlw b'11100000'
-    retlw b'01110000'
-    retlw b'00111000'
-    retlw b'00011100'
-    retlw b'00001110'
-    retlw b'00000111'
+        retlw b'11100000'
+        retlw b'01110000'
+        retlw b'00111000'
+        retlw b'00011100'
+        retlw b'00001110'
+        retlw b'00000111'
 	retlw b'00000011'
 	retlw b'00000001'
 	retlw b'00000011'
 	retlw b'00000111'
-    retlw b'00001110'
-    retlw b'00011100'
-    retlw b'00111000'
-    retlw b'01110000'
-    retlw b'11100000'
+        retlw b'00001110'
+        retlw b'00011100'
+        retlw b'00111000'
+        retlw b'01110000'
+        retlw b'11100000'
 	retlw b'11000000'
-	retlw b'10000000'
 	return
 	
 end

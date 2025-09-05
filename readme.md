@@ -2,6 +2,8 @@
 
 Este repositorio contiene un host Python para cargar programas `.hex` en microcontroladores PIC16 usando el bootloader AN1310. Funciona en **Linux** con adaptadores USB a TTL (ej. CP2102, FTDI).
 
+Además se van a subir algunos binarios y codigos en assembly de ejemplo para probar el host. (Trabajos practicos de la materia Electrónica Digital II de la UNC - FCEFyN)
+
 ---
 
 ## Requisitos
@@ -34,6 +36,9 @@ Puedes hacerlo manual (copiar las instrucciones de setup.sh) o ejecutar el archi
 chmod +x setup.sh
 ./setup.sh
 ```
+
+> Esto instalará las dependencias necesarias y creará un entorno virtual de Python.
+> Es posible que no se active el entorno virtual automáticamente, en ese caso hazlo manualmente con `source venv/bin/activate`.
 
 ## 3. Configurar permisos del puerto USB
 
