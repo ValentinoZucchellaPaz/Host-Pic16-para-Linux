@@ -37,4 +37,4 @@ echo "   (Luego cierra sesión y vuelve a entrar)"
 echo ""
 
 echo "✅ Setup completado. Para usar el host:"
-echo "   python host.py -p /dev/ttyUSB0 archivo.hex"
+echo "   python host.py -p /dev/ttyUSB0 ./binarios/archivo.hex"
