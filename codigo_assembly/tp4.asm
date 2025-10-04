@@ -81,7 +81,7 @@ list p=16F887
 	call RET1            ; retardo (~5ms)
 
 	; ---- Display 2 ----
-	call ApagarDisplays
+	call ApagarDisplaysj
 
 	movf CONT2, W
 	call TABLA_7SEG
