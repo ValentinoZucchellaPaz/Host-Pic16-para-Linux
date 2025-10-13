@@ -16,7 +16,6 @@ list p=16F887
  
 	W_TEMP      EQU 0x27   ; backup de W
 	STATUS_TEMP EQU 0x28   ; backup de STATUS
-        RUN_FLAG EQU 0x29   ; bit que indica si la cuenta corre
     
 	ORG 0x00
 	GOTO MAIN
@@ -24,9 +23,8 @@ list p=16F887
 	ORG 0x04
 	GOTO ISR
 	
-	ORG 0X05
+	ORG 0X20
     MAIN
-    
 	BANKSEL ANSELH         
 	CLRF ANSELH	    ;defino como digital el puerto B
 	
@@ -46,6 +44,22 @@ list p=16F887
 	BANKSEL PORTA
 	CLRF PORTA
 	
+	
+	; configuracion de interrupciones -- en un futuro se agrega interrupciones por rbo0 osea se cambia
+	; del optn_reg INTEDG Y TOSE
+	; del intcon INTE
+	BANKSEL OPTION_REG
+	movlw b'01000111' ; (6) INTEDG=1 ? flanco ascendente
+			  ; (5) T0CS=0 -> usa reloj interno
+			  ; (3) PSA=0 -> prescaler asignado a TMR0
+		          ; (2:0) PS2:PS0=111 -> prescaler 1:256
+	movwf OPTION_REG
+	
+	BANKSEL INTCON
+	bsf INTCON, T0IE   ; habilito interrupción por TMR0
+	bsf INTCON, INTE   ; habilito interrupción externa con pin rb0
+        bsf INTCON, GIE    ; habilito interrupción global
+
 	CLRF	CONT1
 	CLRF	CONT2
 	CLRF	CONT3
@@ -54,38 +68,17 @@ list p=16F887
 	; inicializo contador de isr
 	movlw d'15'
 	movwf SEC_COUNT
-	
-        BSF RUN_FLAG, 0    ; la cuenta arranca corriendo
-	
-	
-	; configuracion de interrupciones -- en un futuro se agrega interrupciones por rbo0 osea se cambia
-	; del optn_reg INTEDG Y TOSE
-	; del intcon INTE
-	BANKSEL OPTION_REG
-	movlw b'11000111' ; (6) INTEDG=1 â†’ flanco ascendente
-			  ; (5) T0CS=0 -> usa reloj interno
-			  ; (3) PSA=0 -> prescaler asignado a TMR0
-		          ; (2:0) PS2:PS0=111 -> prescaler 1:256
-	movwf OPTION_REG
-	
-	BANKSEL INTCON
-	bcf INTCON, T0IF   ; limpio bandera TMR0
-	bcf INTCON, INTF   ; limpio bandera RB0/INT
-	bsf INTCON, T0IE   ; habilito interrupciÃ³n por TMR0
-	bsf INTCON, INTE   ; habilito interrupciÃ³n externa con pin rb0
-        bsf INTCON, GIE    ; habilito interrupciÃ³n global
-
 
     LOOP
 	; ---- Display 1 ----
 	call ApagarDisplays
 
-	movf CONT1, W        ; cargar valor (0â€“9), llama tabla y pone valor en portb
+	movf CONT1, W        ; cargar valor (0?9), llama tabla y pone valor en portb
 	call TABLA_7SEG      
 	movwf PORTB          
 
 	bsf PORTA, 0         ; habilitar display 1 (RA0=1)
-	call RET1            ; retardo visible (~50ms)
+	call RET1            ; retardo (~5ms)
 
 	; ---- Display 2 ----
 	call ApagarDisplays
@@ -124,7 +117,7 @@ list p=16F887
 	return
 	
     
-    RET1			    ; tarda ~5ms = 5,372ms
+    RET1			    ; tarda ~5ms = 5,372ms a Finstruccion = 1us
         MOVLW   0xFF	    ; COUNT1=255 COUNT2 = 7
         MOVWF   r1
         MOVLW	d'7'
@@ -135,7 +128,7 @@ list p=16F887
         GOTO    D1
 
         DECFSZ  r2, f
-        GOTO    D1
+        GOTO    D1
         
 	RETURN
 	
@@ -160,12 +153,12 @@ list p=16F887
 	swapf   STATUS, W    ; pasar STATUS a W (swapf para no perder flags)
 	movwf   STATUS_TEMP
 
-	; ==== InterrupciÃ³n por TMR0 ====
-	btfsc   INTCON, T0IF      ; Â¿bandera TMR0?
+	; ==== Interrupción por TMR0 ====
+	btfsc   INTCON, T0IF      ; ¿bandera TMR0?
 	call    TMR0_ISR
 
-	; ==== InterrupciÃ³n por RB0/INT ====
-	btfsc   INTCON, INTF      ; Â¿bandera RB0?
+	; ==== Interrupción por RB0/INT ====
+	btfsc   INTCON, INTF      ; ¿bandera RB0?
 	call    RB0_ISR
 	
     ISR_FIN
@@ -184,10 +177,6 @@ list p=16F887
 
 	movlw   d'5'		  ; 15 interrupciones = ~1seg ; pongo menos para ver cambio rapido
 	movwf   SEC_COUNT
-	
-	; Verifico si RUN_FLAG estÃ¡ en 1
-        btfss RUN_FLAG, 0
-        return
 
 	; ---- Aumentar CONT1..CONT4 ----
 	incf    CONT1, f
@@ -221,14 +210,24 @@ list p=16F887
 	return
 	
     RB0_ISR
-	bcf INTCON, INTF      ; limpio bandera RB0
-	call RET1             ; retardo antirrebote
+	bcf INTCON, INTF     ; limpio bandera RB0
+	call RET1	     ; retardo de 5ms para evitar rebote
 
-	; toggle bit0 de RUN_FLAG:
-	movf RUN_FLAG, W
-        xorlw 0x01          ; invierte el bit0
-        movwf RUN_FLAG
-        return
+	; ---- toggle TMR0 ----
+	btfsc INTCON, T0IE   ; ¿está habilitado TMR0?
+	goto apagar_T0IE     ; si si -> lo apago y vuelvo
+	goto prender_T0IE    ; si no -> lo prendo y vuelvo
+	
+	
+	
+	   
+    apagar_T0IE
+	bcf INTCON, T0IE
+	return
+	
+    prender_T0IE
+	bsf INTCON, T0IE
+	return
 
 
 	END
